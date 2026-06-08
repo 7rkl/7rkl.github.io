@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
-  <title>Your Shipment Is Ready 📦</title>
+  <title>Your Baba Is Ready 🐾</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap');
 
@@ -338,6 +338,58 @@
       z-index: 1;
     }
 
+    /* ── Cat ears on header ── */
+    .cat-ears {
+      display: flex;
+      justify-content: center;
+      gap: 120px;
+      margin-bottom: -18px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .ear {
+      width: 0;
+      height: 0;
+      border-left: 22px solid transparent;
+      border-right: 22px solid transparent;
+      border-bottom: 38px solid rgba(255,255,255,0.72);
+      filter: drop-shadow(0 -2px 6px var(--shadow));
+      position: relative;
+    }
+
+    .ear::after {
+      content: '';
+      position: absolute;
+      top: 10px;
+      left: -10px;
+      width: 0;
+      height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 18px solid rgba(232, 160, 176, 0.6);
+    }
+
+    /* ── Paw watermark on cards ── */
+    .package-card,
+    .form-card,
+    .success-screen {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .package-card::after,
+    .form-card::after {
+      content: '🐾';
+      position: absolute;
+      bottom: -6px;
+      right: 10px;
+      font-size: 3.5rem;
+      opacity: 0.06;
+      pointer-events: none;
+      transform: rotate(-15deg);
+    }
+
     /* ── Confetti canvas ── */
     #confetti {
       position: fixed;
@@ -360,18 +412,19 @@
 
     <!-- Header -->
     <div class="header">
-      <div class="badge">Express Delivery</div>
-      <h1>Schedule Your<br>Shipment, Ghala 🌹</h1>
-      <p>One very special package is ready and waiting.<br>Pick when you'd like it delivered.</p>
+      <div class="cat-ears"><div class="ear"></div><div class="ear"></div></div>
+      <div class="badge">Purr-fect Delivery 🐾</div>
+      <h1>When do you want<br>your Baba, kitty? 😸</h1>
+      <p>One very devoted Baba is packed and ready.<br>Just say when — he'll come running. 🐾</p>
     </div>
 
     <!-- Package card -->
     <div class="package-card">
-      <div class="package-icon">📦</div>
+      <div class="package-icon">😸</div>
       <div class="package-info">
-        <h3>1x Premium Companion</h3>
-        <p>Handcrafted with care.<br>Comes fully charged with affection.</p>
-        <span class="tracking-id">TRK-HEART-0001</span>
+        <h3>1x Devoted Baba</h3>
+        <p>Comes fully stocked with pets & cuddles.<br>Cannot be returned. Will meow back.</p>
+        <span class="tracking-id">TRK-PURR-0001</span>
       </div>
     </div>
 
@@ -390,24 +443,31 @@
       </div>
 
       <button class="confirm-btn" onclick="confirmDelivery()">
-        Confirm Delivery ✨
+        Claim Your Baba 🐾
       </button>
     </div>
 
     <!-- Success screen -->
     <div class="success-screen" id="successScreen">
-      <div class="success-emoji">🥰</div>
-      <h2>Order Confirmed!</h2>
-      <p>Your shipment has been scheduled.<br>Delivery guaranteed — no returns accepted.</p>
+      <div class="success-emoji">😻</div>
+      <h2>Purrr-fect! 🐾</h2>
+      <p>Your Baba has been scheduled for delivery.<br>He will arrive on time — probably purring.</p>
       <div class="delivery-summary" id="deliverySummary"></div>
-      <p style="font-size:0.8rem; color:var(--muted);">Mark your calendar — this one's worth it. 💌</p>
+      <p style="font-size:0.8rem; color:var(--muted);">Mark your calendar, kitty — this one's worth it. 💌</p>
     </div>
 
   </div>
 
-  <div class="footer">Made with 💗 · Delivered fresh, just for Ghala</div>
+  <div class="footer">Made with 💗 · Purring just for my kitty</div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script>
+    // ── EmailJS config ──
+    const EMAILJS_PUBLIC_KEY  = 'kKESzSlDuZqiSyqZf';
+    const EMAILJS_SERVICE_ID  = 'service_hmgjvbe';
+    const EMAILJS_TEMPLATE_ID = 'template_wb753db';
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
     // ── Set default date/time to tomorrow ──
     (function () {
       const tomorrow = new Date();
@@ -425,7 +485,7 @@
     // ── Spawn floating hearts ──
     (function () {
       const container = document.getElementById('hearts');
-      const emojis = ['🤍', '🌸', '💗', '✨', '🌹', '💝', '🫶'];
+      const emojis = ['🐾', '😸', '💗', '🐱', '✨', '😻', '🫶', '🌸', '💝'];
       for (let i = 0; i < 18; i++) {
         const el = document.createElement('div');
         el.className = 'heart';
@@ -464,6 +524,11 @@
       document.getElementById('successScreen').classList.add('show');
 
       launchConfetti();
+
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        delivery_date: dateStr,
+        delivery_time: timeStr,
+      });
     }
 
     // ── Shake animation on empty submit ──
