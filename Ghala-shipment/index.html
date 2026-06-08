@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Your Shipment Is Ready 📦</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&display=swap');
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --rose: #e8a0b0;
+      --deep-rose: #c2637a;
+      --cream: #fdf6f0;
+      --warm-white: #fff8f3;
+      --text: #3a2a2e;
+      --muted: #9a7f87;
+      --card: rgba(255, 255, 255, 0.7);
+      --shadow: rgba(194, 99, 122, 0.15);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--cream);
+      color: var(--text);
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+    }
+
+    /* ── Animated background ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(232,160,176,0.25) 0%, transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(194, 99, 122, 0.15) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 50%, rgba(253, 220, 220, 0.2) 0%, transparent 70%);
+      animation: bgpulse 8s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes bgpulse {
+      from { opacity: 0.8; transform: scale(1); }
+      to   { opacity: 1;   transform: scale(1.03); }
+    }
+
+    /* ── Floating hearts ── */
+    .hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .heart {
+      position: absolute;
+      bottom: -60px;
+      font-size: 1.2rem;
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.3; }
+      100% { transform: translateY(-110vh) rotate(25deg); opacity: 0; }
+    }
+
+    /* ── Main wrapper ── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      padding: 32px 20px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--deep-rose), #a0485e);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 100px;
+      margin-bottom: 16px;
+    }
+
+    .header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 6vw, 2.4rem);
+      color: var(--text);
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    /* ── Package card ── */
+    .package-card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(232, 160, 176, 0.4);
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 32px var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .package-icon {
+      font-size: 3rem;
+      flex-shrink: 0;
+      animation: wobble 3s ease-in-out infinite;
+    }
+
+    @keyframes wobble {
+      0%, 100% { transform: rotate(-4deg); }
+      50%       { transform: rotate(4deg); }
+    }
+
+    .package-info {
+      flex: 1;
+    }
+
+    .package-info h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .package-info p {
+      color: var(--muted);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    .tracking-id {
+      display: inline-block;
+      margin-top: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--deep-rose);
+      background: rgba(194, 99, 122, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Form card ── */
+    .form-card {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(232, 160, 176, 0.4);
+      border-radius: 20px;
+      padding: 24px 20px;
+      box-shadow: 0 8px 32px var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .form-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--text);
+      margin-bottom: -4px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+    }
+
+    .field input {
+      -webkit-appearance: none;
+      appearance: none;
+      border: 1.5px solid rgba(194, 99, 122, 0.3);
+      border-radius: 12px;
+      padding: 13px 16px;
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.85);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+
+    .field input:focus {
+      border-color: var(--deep-rose);
+      box-shadow: 0 0 0 3px rgba(194, 99, 122, 0.15);
+    }
+
+    /* ── Confirm button ── */
+    .confirm-btn {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--deep-rose) 0%, #a0485e 100%);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      box-shadow: 0 4px 20px rgba(194, 99, 122, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .confirm-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+    }
+
+    .confirm-btn:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 10px rgba(194, 99, 122, 0.3);
+    }
+
+    /* ── Success screen ── */
+    .success-screen {
+      display: none;
+      text-align: center;
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(232, 160, 176, 0.4);
+      border-radius: 20px;
+      padding: 36px 24px;
+      box-shadow: 0 8px 32px var(--shadow);
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .success-screen.show {
+      display: flex;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+
+    .success-emoji {
+      font-size: 4rem;
+      animation: heartbeat 1.2s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14%       { transform: scale(1.15); }
+      28%       { transform: scale(1); }
+      42%       { transform: scale(1.1); }
+    }
+
+    .success-screen h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    .success-screen p {
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .delivery-summary {
+      background: rgba(194, 99, 122, 0.08);
+      border: 1px solid rgba(194, 99, 122, 0.2);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 0.88rem;
+      color: var(--text);
+      line-height: 1.7;
+      text-align: left;
+      width: 100%;
+    }
+
+    .delivery-summary span {
+      font-weight: 600;
+      color: var(--deep-rose);
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.75rem;
+      padding-bottom: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Confetti canvas ── */
+    #confetti {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating hearts -->
+  <div class="hearts" id="hearts"></div>
+
+  <!-- Confetti canvas -->
+  <canvas id="confetti"></canvas>
+
+  <div class="wrapper">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="badge">Express Delivery</div>
+      <h1>Schedule Your<br>Shipment, Ghala 🌹</h1>
+      <p>One very special package is ready and waiting.<br>Pick when you'd like it delivered.</p>
+    </div>
+
+    <!-- Package card -->
+    <div class="package-card">
+      <div class="package-icon">📦</div>
+      <div class="package-info">
+        <h3>1x Premium Companion</h3>
+        <p>Handcrafted with care.<br>Comes fully charged with affection.</p>
+        <span class="tracking-id">TRK-HEART-0001</span>
+      </div>
+    </div>
+
+    <!-- Form -->
+    <div class="form-card" id="formCard">
+      <h2>Choose Delivery Window</h2>
+
+      <div class="field">
+        <label>Delivery Date</label>
+        <input type="date" id="dateInput" />
+      </div>
+
+      <div class="field">
+        <label>Preferred Time</label>
+        <input type="time" id="timeInput" />
+      </div>
+
+      <button class="confirm-btn" onclick="confirmDelivery()">
+        Confirm Delivery ✨
+      </button>
+    </div>
+
+    <!-- Success screen -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-emoji">🥰</div>
+      <h2>Order Confirmed!</h2>
+      <p>Your shipment has been scheduled.<br>Delivery guaranteed — no returns accepted.</p>
+      <div class="delivery-summary" id="deliverySummary"></div>
+      <p style="font-size:0.8rem; color:var(--muted);">Mark your calendar — this one's worth it. 💌</p>
+    </div>
+
+  </div>
+
+  <div class="footer">Made with 💗 · Delivered fresh, just for Ghala</div>
+
+  <script>
+    // ── Set default date/time to tomorrow ──
+    (function () {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const yyyy = tomorrow.getFullYear();
+      const mm   = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const dd   = String(tomorrow.getDate()).padStart(2, '0');
+      document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}`;
+      document.getElementById('timeInput').value  = '18:00';
+
+      const min = new Date().toISOString().split('T')[0];
+      document.getElementById('dateInput').min = min;
+    })();
+
+    // ── Spawn floating hearts ──
+    (function () {
+      const container = document.getElementById('hearts');
+      const emojis = ['🤍', '🌸', '💗', '✨', '🌹', '💝', '🫶'];
+      for (let i = 0; i < 18; i++) {
+        const el = document.createElement('div');
+        el.className = 'heart';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left     = Math.random() * 100 + 'vw';
+        el.style.fontSize = (0.8 + Math.random() * 1) + 'rem';
+        el.style.animationDuration  = (8 + Math.random() * 12) + 's';
+        el.style.animationDelay     = (Math.random() * 12) + 's';
+        el.style.animationIterationCount = 'infinite';
+        container.appendChild(el);
+      }
+    })();
+
+    // ── Confirm delivery ──
+    function confirmDelivery() {
+      const dateVal = document.getElementById('dateInput').value;
+      const timeVal = document.getElementById('timeInput').value;
+
+      if (!dateVal || !timeVal) {
+        shake(document.getElementById('formCard'));
+        return;
+      }
+
+      const dateObj = new Date(`${dateVal}T${timeVal}`);
+      const dateStr = dateObj.toLocaleDateString('en-US', {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+      });
+      const timeStr = dateObj.toLocaleTimeString('en-US', {
+        hour: '2-digit', minute: '2-digit'
+      });
+
+      document.getElementById('deliverySummary').innerHTML =
+        `📅 <span>${dateStr}</span><br>🕰️ Arriving at <span>${timeStr}</span><br>📍 Destination: <span>Wherever you are</span>`;
+
+      document.getElementById('formCard').style.display = 'none';
+      document.getElementById('successScreen').classList.add('show');
+
+      launchConfetti();
+    }
+
+    // ── Shake animation on empty submit ──
+    function shake(el) {
+      el.animate([
+        { transform: 'translateX(0)' },
+        { transform: 'translateX(-8px)' },
+        { transform: 'translateX(8px)' },
+        { transform: 'translateX(-8px)' },
+        { transform: 'translateX(0)' },
+      ], { duration: 350, easing: 'ease-out' });
+    }
+
+    // ── Confetti ──
+    function launchConfetti() {
+      const canvas = document.getElementById('confetti');
+      canvas.style.display = 'block';
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      const ctx = canvas.getContext('2d');
+
+      const colors = ['#e8a0b0','#c2637a','#f9cdd7','#fff0f3','#a0485e','#ffd6e0'];
+      const pieces = Array.from({ length: 120 }, () => ({
+        x:  Math.random() * canvas.width,
+        y: -Math.random() * canvas.height,
+        r:  3 + Math.random() * 5,
+        c:  colors[Math.floor(Math.random() * colors.length)],
+        vx: -1.5 + Math.random() * 3,
+        vy: 2 + Math.random() * 4,
+        ang: Math.random() * Math.PI * 2,
+        spin: (-0.05 + Math.random() * 0.1),
+      }));
+
+      let alive = true;
+      let frame;
+
+      function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        pieces.forEach(p => {
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.ang);
+          ctx.fillStyle = p.c;
+          ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r);
+          ctx.restore();
+          p.x  += p.vx;
+          p.y  += p.vy;
+          p.ang += p.spin;
+          if (p.y > canvas.height) {
+            p.y = -10;
+            p.x = Math.random() * canvas.width;
+          }
+        });
+        if (alive) frame = requestAnimationFrame(draw);
+      }
+
+      draw();
+      setTimeout(() => {
+        alive = false;
+        cancelAnimationFrame(frame);
+        canvas.style.display = 'none';
+      }, 4000);
+    }
+  </script>
+</body>
+</html>
