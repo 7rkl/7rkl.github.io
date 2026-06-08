@@ -338,12 +338,15 @@
       z-index: 1;
     }
 
-    /* ── Cat ears on header ── */
+    /* ── Cat ears above the page ── */
     .cat-ears {
       display: flex;
       justify-content: center;
       gap: 120px;
-      margin-bottom: -18px;
+      width: 100%;
+      max-width: 480px;
+      padding: 0 20px;
+      margin-top: 28px;
       position: relative;
       z-index: 2;
     }
@@ -408,11 +411,12 @@
   <!-- Confetti canvas -->
   <canvas id="confetti"></canvas>
 
+  <div class="cat-ears"><div class="ear"></div><div class="ear"></div></div>
+
   <div class="wrapper">
 
     <!-- Header -->
     <div class="header">
-      <div class="cat-ears"><div class="ear"></div><div class="ear"></div></div>
       <div class="badge">Purr-fect Delivery 🐾</div>
       <h1>When do you want<br>your Baba, kitty? 😸</h1>
       <p>One very devoted Baba is packed and ready.<br>Just say when — he'll come running. 🐾</p>
