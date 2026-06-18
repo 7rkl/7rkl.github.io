@@ -414,29 +414,15 @@
     .kiss-emoji {
       position: absolute;
       font-size: 3.5rem;
-      animation: kissFloat 2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       opacity: 0;
+      pointer-events: none;
     }
 
     .kiss-heart {
       position: absolute;
       font-size: 1.4rem;
-      animation: kissHeartPop 1.6s ease-out forwards;
       opacity: 0;
-    }
-
-    @keyframes kissFloat {
-      0%   { transform: translate(0, 0) scale(0.4) rotate(-10deg); opacity: 0; }
-      15%  { opacity: 1; }
-      60%  { opacity: 1; transform: translate(var(--tx), var(--ty)) scale(1.1) rotate(5deg); }
-      100% { transform: translate(var(--tx2), var(--ty2)) scale(0.7) rotate(15deg); opacity: 0; }
-    }
-
-    @keyframes kissHeartPop {
-      0%   { transform: translate(0, 0) scale(0.2); opacity: 0; }
-      25%  { opacity: 1; transform: translate(var(--hx), var(--hy)) scale(1.2); }
-      60%  { opacity: 0.7; }
-      100% { transform: translate(var(--hx2), var(--hy2)) scale(0.5); opacity: 0; }
+      pointer-events: none;
     }
   </style>
 </head>
@@ -493,7 +479,7 @@
 
     <!-- Success screen -->
     <div class="success-screen" id="successScreen">
-      <div class="success-emoji">😻</div>
+      <div class="success-emoji">😘</div>
       <h2>Purrr-fect! 🐾</h2>
       <p>Your Baba has been scheduled for delivery.<br>He will arrive on time — probably purring.</p>
       <div class="delivery-summary" id="deliverySummary"></div>
@@ -560,7 +546,7 @@
       const vw = window.innerWidth;
       const vh = window.innerHeight;
 
-      // Main 😘 emoji — starts bottom-center, arcs toward center-top
+      // Main 😘 — starts bottom-center, floats up and slightly right
       const kiss = document.createElement('div');
       kiss.className = 'kiss-emoji';
       kiss.textContent = '😘';
@@ -568,35 +554,43 @@
       const sy = vh - 80;
       kiss.style.left = sx + 'px';
       kiss.style.top  = sy + 'px';
-      kiss.style.setProperty('--tx',  '0px');
-      kiss.style.setProperty('--ty',  `-${vh * 0.35}px`);
-      kiss.style.setProperty('--tx2', `${vw * 0.15}px`);
-      kiss.style.setProperty('--ty2', `-${vh * 0.55}px`);
       overlay.appendChild(kiss);
 
-      // Scatter little hearts from the kiss
-      const heartEmojis = ['💋', '💗', '💝', '💖', '😻'];
+      kiss.animate([
+        { transform: 'translate(0, 0) scale(0.4) rotate(-10deg)', opacity: 0 },
+        { transform: 'translate(0, 0) scale(1) rotate(-10deg)',    opacity: 1,  offset: 0.12 },
+        { transform: `translate(${vw * 0.12}px, ${-vh * 0.38}px) scale(1.1) rotate(5deg)`, opacity: 1, offset: 0.6 },
+        { transform: `translate(${vw * 0.22}px, ${-vh * 0.58}px) scale(0.7) rotate(15deg)`, opacity: 0 },
+      ], { duration: 2000, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' });
+
+      // Scatter hearts / lip prints around it
+      const heartEmojis = ['💋', '💗', '💝', '💖', '💗', '💋'];
       for (let i = 0; i < 6; i++) {
         const h = document.createElement('div');
         h.className = 'kiss-heart';
-        h.textContent = heartEmojis[Math.floor(Math.random() * heartEmojis.length)];
-        const angle = (Math.random() * Math.PI) - Math.PI / 2;
-        const dist1 = 60 + Math.random() * 80;
-        const dist2 = 130 + Math.random() * 120;
-        h.style.left = (sx + 20 + Math.random() * 40 - 20) + 'px';
-        h.style.top  = (sy - 10 + Math.random() * 20) + 'px';
-        h.style.animationDelay = (0.1 + i * 0.08) + 's';
-        h.style.setProperty('--hx',  Math.cos(angle) * dist1 + 'px');
-        h.style.setProperty('--hy',  Math.sin(angle) * dist1 - dist1 * 0.5 + 'px');
-        h.style.setProperty('--hx2', Math.cos(angle) * dist2 + 'px');
-        h.style.setProperty('--hy2', Math.sin(angle) * dist2 - dist2 * 0.8 + 'px');
+        h.textContent = heartEmojis[i];
+        const hx = sx + 20 + (Math.random() * 40 - 20);
+        const hy = sy + (Math.random() * 20 - 10);
+        h.style.left = hx + 'px';
+        h.style.top  = hy + 'px';
         overlay.appendChild(h);
+
+        const angle = (Math.random() * Math.PI * 1.2) - Math.PI * 0.9;
+        const d1 = 70  + Math.random() * 70;
+        const d2 = 150 + Math.random() * 100;
+        const ex1 = Math.cos(angle) * d1;
+        const ey1 = Math.sin(angle) * d1 - d1 * 0.6;
+        const ex2 = Math.cos(angle) * d2;
+        const ey2 = Math.sin(angle) * d2 - d2 * 0.9;
+
+        h.animate([
+          { transform: 'translate(0, 0) scale(0.2)', opacity: 0 },
+          { transform: `translate(${ex1}px, ${ey1}px) scale(1.2)`, opacity: 1,   offset: 0.3 },
+          { transform: `translate(${ex2}px, ${ey2}px) scale(0.5)`, opacity: 0 },
+        ], { duration: 1800, delay: 80 + i * 70, easing: 'ease-out', fill: 'forwards' });
       }
 
-      // Clean up after animation
-      setTimeout(() => {
-        overlay.innerHTML = '';
-      }, 2800);
+      setTimeout(() => { overlay.innerHTML = ''; }, 2900);
     }
 
     // ── Confirm delivery ──
