@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>7rkl / home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        .label {
+            font-size: 1rem;
+            color: #555;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .state {
+            font-size: clamp(4rem, 20vw, 10rem);
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            transition: color 0.4s ease;
+        }
+
+        .state.on  { color: #00ff88; }
+        .state.off { color: #ff3333; }
+        .state.loading { color: #444; }
+
+        .dot {
+            display: inline-block;
+            width: 0.6em;
+            height: 0.6em;
+            border-radius: 50%;
+            margin-left: 0.3em;
+            vertical-align: middle;
+            background: currentColor;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .state.loading .dot { animation: blink 1s step-end infinite; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0; }
+        }
+
+        .updated {
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: #333;
+            letter-spacing: 0.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="label">lamp state</div>
+        <div class="state loading" id="state">
+            &mdash;<span class="dot"></span>
+        </div>
+        <div class="updated" id="updated"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+        import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+
+        const app = initializeApp({
+            databaseURL: "https://home-cce99-default-rtdb.firebaseio.com",
+        });
+
+        const db = ref(getDatabase(app), "/7rkl/state");
+
+        const stateEl   = document.getElementById("state");
+        const updatedEl = document.getElementById("updated");
+
+        onValue(db, (snapshot) => {
+            const val = snapshot.val() ?? "—";
+            const isOn = val === "ON";
+
+            stateEl.className = "state " + (val === "ON" ? "on" : val === "OFF" ? "off" : "loading");
+            stateEl.innerHTML = val + (val !== "—" ? '<span class="dot"></span>' : "");
+
+            updatedEl.textContent = "last updated " + new Date().toLocaleTimeString();
+        });
+    </script>
+</body>
+</html>
