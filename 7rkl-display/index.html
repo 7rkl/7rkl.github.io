@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>7rkl / display</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #0a0a0a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 480px;
+            padding: 2rem;
+        }
+
+        .label {
+            font-size: 0.85rem;
+            color: #555;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 2rem;
+        }
+
+        .input-wrap {
+            position: relative;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 6px;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            padding: 0.9rem 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+            letter-spacing: 0.05em;
+        }
+
+        input[type="text"]:focus {
+            border-color: #444;
+        }
+
+        .counter {
+            position: absolute;
+            right: 0.8rem;
+            bottom: 0.75rem;
+            font-size: 0.7rem;
+            color: #333;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+
+        .counter.near  { color: #888; }
+        .counter.full  { color: #ff3333; }
+
+        button {
+            margin-top: 1.2rem;
+            width: 100%;
+            padding: 0.85rem;
+            background: #fff;
+            color: #0a0a0a;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            font-weight: bold;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: background 0.2s, opacity 0.2s;
+        }
+
+        button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        button:not(:disabled):hover {
+            background: #ccc;
+        }
+
+        .status {
+            margin-top: 1.2rem;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            min-height: 1.2em;
+            transition: color 0.3s;
+        }
+
+        .status.ok  { color: #00ff88; }
+        .status.err { color: #ff3333; }
+        .status.pending { color: #555; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="label">display text</div>
+        <div class="input-wrap">
+            <input
+                type="text"
+                id="textInput"
+                maxlength="32"
+                placeholder="enter text..."
+                autocomplete="off"
+                spellcheck="false"
+            >
+            <span class="counter" id="counter">0/32</span>
+        </div>
+        <button id="sendBtn" disabled>SEND</button>
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        const input   = document.getElementById("textInput");
+        const counter = document.getElementById("counter");
+        const sendBtn = document.getElementById("sendBtn");
+        const status  = document.getElementById("status");
+
+        const ENDPOINT = "https://home-cce99-default-rtdb.firebaseio.com/7rkl/display/text.json?auth=BaMmC6ZUFOpew6gCCWnu9pZ70UBSwXg7BPrJzLnn";
+
+        input.addEventListener("input", () => {
+            const len = input.value.length;
+            counter.textContent = len + "/32";
+            counter.className = "counter" + (len === 32 ? " full" : len >= 24 ? " near" : "");
+            sendBtn.disabled = len === 0;
+            status.textContent = "";
+            status.className = "status";
+        });
+
+        sendBtn.addEventListener("click", async () => {
+            const text = input.value.trim();
+            if (!text) return;
+
+            sendBtn.disabled = true;
+            status.textContent = "sending...";
+            status.className = "status pending";
+
+            try {
+                const res = await fetch(ENDPOINT, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(text),
+                });
+
+                if (!res.ok) throw new Error("HTTP " + res.status);
+
+                status.textContent = "sent.";
+                status.className = "status ok";
+            } catch (e) {
+                status.textContent = "failed: " + e.message;
+                status.className = "status err";
+            } finally {
+                sendBtn.disabled = input.value.length === 0;
+            }
+        });
+    </script>
+</body>
+</html>
