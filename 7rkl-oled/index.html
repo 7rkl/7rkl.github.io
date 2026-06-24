@@ -370,8 +370,8 @@
 
     <div class="panel-card" id="text-card" style="display:none">
       <h3>TEXT</h3>
-      <textarea id="text-input" placeholder="Type something..." maxlength="64"></textarea>
-      <div class="char-count"><span id="char-count">0</span> / 64</div>
+      <textarea id="text-input" placeholder="Type something..." maxlength="21"></textarea>
+      <div class="char-count"><span id="char-count">0</span> / 21</div>
     </div>
 
     <div class="panel-card">
@@ -507,7 +507,7 @@ function applyMode() {
     textPreviewWrap.classList.remove('visible');
   } else if (mode === 'text') {
     textCard.style.display = 'block';
-    textPreviewWrap.classList.remove('visible');
+    textPreviewWrap.classList.add('visible');
     pixels.fill(0);
     renderCanvas();
   } else {
