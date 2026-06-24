@@ -547,7 +547,8 @@ document.getElementById('push-btn').addEventListener('click', async () => {
   btn.classList.remove('error-state');
 
   const payload = buildPayload();
-  const url = `${FB_URL}/${FB_PATH}.json${FB_SECRET ? '?auth=' + FB_SECRET : ''}`;
+  const cleanPath = FB_PATH.replace(/\.json$/, '');
+  const url = `${FB_URL}/${cleanPath}.json${FB_SECRET ? '?auth=' + FB_SECRET : ''}`;
 
   try {
     const res = await fetch(url, {
@@ -606,7 +607,7 @@ function setStatus(state, label) {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 setStatus('live', 'CONNECTED');
-log(`Firebase → ${FB_URL}/${FB_PATH}`, 'ok');
+log(`Firebase → ${FB_URL}/${FB_PATH.replace(/\.json$/, '')}.json`, 'ok');
 renderCanvas();
 </script>
 </body>
