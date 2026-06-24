@@ -136,6 +136,12 @@
         const ENDPOINT = "https://home-cce99-default-rtdb.firebaseio.com/7rkl/display/text.json?auth=BaMmC6ZUFOpew6gCCWnu9pZ70UBSwXg7BPrJzLnn";
 
         input.addEventListener("input", () => {
+            const pos = input.selectionStart;
+            const cleaned = input.value.replace(/[^\x20-\x7E]/g, "");
+            if (cleaned !== input.value) {
+                input.value = cleaned;
+                input.setSelectionRange(pos - 1, pos - 1);
+            }
             const len = input.value.length;
             counter.textContent = len + "/32";
             counter.className = "counter" + (len === 32 ? " full" : len >= 24 ? " near" : "");

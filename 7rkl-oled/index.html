@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OLED Controller</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0a0a0f;
+    --surface:   #111118;
+    --border:    #1e1e2e;
+    --border-hi: #2e2e4e;
+    --oled-bg:   #000000;
+    --oled-px:   #a0e8ff;
+    --oled-dim:  #0a1a22;
+    --accent:    #00d4ff;
+    --accent2:   #7c3aed;
+    --danger:    #ff4466;
+    --muted:     #444466;
+    --text:      #c8c8e8;
+    --text-dim:  #666688;
+    --green:     #00ff9d;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 64px;
+  }
+
+  /* ── Header ── */
+  header {
+    width: 100%;
+    max-width: 900px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  header h1 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+  header span {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-left: auto;
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .status-dot.live {
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+  .status-dot.error { background: var(--danger); }
+
+  /* ── Main layout ── */
+  .main {
+    width: 100%;
+    max-width: 900px;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Mode tabs ── */
+  .mode-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-hi);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .mode-tab {
+    flex: 1;
+    padding: 10px 0;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .mode-tab:not(:last-child) { border-right: 1px solid var(--border-hi); }
+  .mode-tab.active {
+    background: var(--accent);
+    color: #000;
+  }
+
+  /* ── Canvas area ── */
+  .canvas-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 20px;
+  }
+
+  .canvas-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  #pixel-canvas {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    background: var(--oled-bg);
+    border: 1px solid #1a3a4a;
+    border-radius: 6px;
+    cursor: crosshair;
+    image-rendering: pixelated;
+    touch-action: none;
+  }
+
+  #text-preview-wrap {
+    margin-top: 12px;
+    background: var(--oled-bg);
+    border: 1px solid #1a3a4a;
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: none;
+  }
+  #text-preview-wrap.visible { display: block; }
+  .preview-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    letter-spacing: 0.5px;
+  }
+  #text-preview {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--oled-px);
+    word-break: break-all;
+    min-height: 20px;
+    text-shadow: 0 0 6px var(--oled-px);
+  }
+
+  .canvas-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .tool-btn {
+    padding: 6px 14px;
+    background: transparent;
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tool-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+  .tool-btn.danger { border-color: var(--danger); color: var(--danger); }
+  .tool-btn.danger:hover { background: var(--danger); color: #fff; }
+
+  .brush-wrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+  .brush-wrap label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .brush-wrap input[type=range] {
+    width: 80px;
+    accent-color: var(--accent);
+  }
+
+  /* ── Right panel ── */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .panel-card {
+    background: var(--surface);
+    border: 1px solid var(--border-hi);
+    border-radius: 10px;
+    padding: 18px;
+  }
+  .panel-card h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+
+  #text-input {
+    width: 100%;
+    background: #0a0a14;
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--oled-px);
+    resize: vertical;
+    min-height: 70px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #text-input:focus { border-color: var(--accent); }
+  #text-input::placeholder { color: var(--muted); }
+  #text-input:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  .char-count {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    text-align: right;
+  }
+
+  .oled-preview-wrap {
+    background: #000;
+    border: 2px solid #222;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: inset 0 0 12px #001a2a;
+    position: relative;
+  }
+  .oled-preview-label {
+    position: absolute;
+    top: -9px; left: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-dim);
+    background: var(--surface);
+    padding: 0 4px;
+    letter-spacing: 0.5px;
+  }
+  #mini-preview {
+    display: block;
+    width: 100%;
+    aspect-ratio: 2 / 1;
+    background: #000;
+    border-radius: 4px;
+    image-rendering: pixelated;
+  }
+
+  #push-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: opacity 0.2s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+  #push-btn:hover { opacity: 0.9; }
+  #push-btn:active { transform: scale(0.98); }
+  #push-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  #push-btn.pushing { background: var(--green); }
+  #push-btn.error-state { background: var(--danger); color: #fff; }
+
+  #log {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    max-height: 80px;
+    overflow-y: auto;
+    line-height: 1.7;
+  }
+  #log .ok { color: var(--green); }
+  #log .err { color: var(--danger); }
+  #log .info { color: var(--accent); }
+
+  @media (max-width: 680px) {
+    .main { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>// OLED CTRL</h1>
+  <span>ESP-01 · 128×64 · Firebase</span>
+  <span id="status-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim)">CONNECTING...</span>
+  <div class="status-dot" id="status-dot"></div>
+</header>
+
+<div class="main">
+
+  <!-- Left: canvas -->
+  <div>
+    <div class="mode-tabs">
+      <button class="mode-tab active" data-mode="draw">DRAW</button>
+      <button class="mode-tab" data-mode="text">TEXT</button>
+      <button class="mode-tab" data-mode="both">DRAW + TEXT</button>
+    </div>
+
+    <div class="canvas-wrap">
+      <div class="canvas-label">CANVAS — 128 × 64 px</div>
+
+      <canvas id="pixel-canvas" width="128" height="64"></canvas>
+
+      <div id="text-preview-wrap">
+        <div class="preview-label">TEXT OVERLAY (bottom 16px)</div>
+        <div id="text-preview">_</div>
+      </div>
+
+      <div class="canvas-toolbar">
+        <button class="tool-btn active" id="tool-pen">✏ DRAW</button>
+        <button class="tool-btn" id="tool-erase">◻ ERASE</button>
+        <button class="tool-btn danger" id="tool-clear">✕ CLEAR</button>
+        <div class="brush-wrap">
+          <label>SIZE</label>
+          <input type="range" id="brush-size" min="1" max="6" value="2">
+          <label id="brush-val">2</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel -->
+  <div class="right-panel">
+
+    <div class="panel-card">
+      <h3>OLED PREVIEW</h3>
+      <div class="oled-preview-wrap">
+        <span class="oled-preview-label">128×64</span>
+        <canvas id="mini-preview" width="128" height="64"></canvas>
+      </div>
+    </div>
+
+    <div class="panel-card" id="text-card" style="display:none">
+      <h3>TEXT</h3>
+      <textarea id="text-input" placeholder="Type something..." maxlength="64"></textarea>
+      <div class="char-count"><span id="char-count">0</span> / 64</div>
+    </div>
+
+    <div class="panel-card">
+      <h3>SEND TO FIREBASE</h3>
+      <button id="push-btn">⬆ PUSH TO OLED</button>
+    </div>
+
+    <div class="panel-card">
+      <h3>LOG</h3>
+      <div id="log"><span class="info">// ready</span></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Firebase config (hardcoded) ──────────────────────────────────────────────
+const FB_URL    = 'https://home-cce99-default-rtdb.firebaseio.com'; // ← edit
+const FB_PATH   = '7rkl/oled.json';                                              // ← edit
+const FB_SECRET = 'BaMmC6ZUFOpew6gCCWnu9pZ70UBSwXg7BPrJzLnn';                                                  // ← edit (optional)
+
+// ── State ────────────────────────────────────────────────────────────────────
+const W = 128, H = 64;
+let pixels = new Uint8Array(W * H);
+let mode = 'draw';
+let tool = 'pen';
+let brushSize = 2;
+let isDrawing = false;
+
+// ── Canvas setup ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById('pixel-canvas');
+const ctx = canvas.getContext('2d');
+const miniCanvas = document.getElementById('mini-preview');
+const mCtx = miniCanvas.getContext('2d');
+
+function renderCanvas() {
+  const img = ctx.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) {
+    const on = pixels[i];
+    img.data[i*4]   = on ? 160 : 10;
+    img.data[i*4+1] = on ? 232 : 26;
+    img.data[i*4+2] = on ? 255 : 34;
+    img.data[i*4+3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const mImg = mCtx.createImageData(W, H);
+  for (let i = 0; i < W * H; i++) {
+    const on = pixels[i];
+    mImg.data[i*4]   = on ? 160 : 0;
+    mImg.data[i*4+1] = on ? 232 : 0;
+    mImg.data[i*4+2] = on ? 255 : 0;
+    mImg.data[i*4+3] = 255;
+  }
+  mCtx.putImageData(mImg, 0, 0);
+}
+
+function getPixelPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return {
+    x: Math.floor((clientX - rect.left) * scaleX),
+    y: Math.floor((clientY - rect.top) * scaleY)
+  };
+}
+
+function paint(x, y) {
+  const val = tool === 'pen' ? 1 : 0;
+  const r = brushSize - 1;
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (nx >= 0 && nx < W && ny >= 0 && ny < H) {
+        if (mode === 'both' && ny >= H - 16) continue;
+        pixels[ny * W + nx] = val;
+      }
+    }
+  }
+  renderCanvas();
+}
+
+canvas.addEventListener('mousedown', e => { isDrawing = true; paint(...Object.values(getPixelPos(e))); });
+canvas.addEventListener('mousemove', e => { if (isDrawing) paint(...Object.values(getPixelPos(e))); });
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mouseleave', () => isDrawing = false);
+canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; paint(...Object.values(getPixelPos(e))); }, {passive:false});
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing) paint(...Object.values(getPixelPos(e))); }, {passive:false});
+canvas.addEventListener('touchend', () => isDrawing = false);
+
+// ── Tools ────────────────────────────────────────────────────────────────────
+document.getElementById('tool-pen').addEventListener('click', () => {
+  tool = 'pen';
+  document.getElementById('tool-pen').classList.add('active');
+  document.getElementById('tool-erase').classList.remove('active');
+});
+document.getElementById('tool-erase').addEventListener('click', () => {
+  tool = 'erase';
+  document.getElementById('tool-erase').classList.add('active');
+  document.getElementById('tool-pen').classList.remove('active');
+});
+document.getElementById('tool-clear').addEventListener('click', () => {
+  pixels.fill(0);
+  renderCanvas();
+  log('Canvas cleared', 'info');
+});
+const brushInput = document.getElementById('brush-size');
+brushInput.addEventListener('input', () => {
+  brushSize = parseInt(brushInput.value);
+  document.getElementById('brush-val').textContent = brushSize;
+});
+
+// ── Mode tabs ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.mode-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    mode = tab.dataset.mode;
+    applyMode();
+  });
+});
+
+function applyMode() {
+  const textCard = document.getElementById('text-card');
+  const textPreviewWrap = document.getElementById('text-preview-wrap');
+
+  canvas.style.display = mode === 'text' ? 'none' : 'block';
+
+  if (mode === 'draw') {
+    textCard.style.display = 'none';
+    textPreviewWrap.classList.remove('visible');
+  } else if (mode === 'text') {
+    textCard.style.display = 'block';
+    textPreviewWrap.classList.remove('visible');
+    pixels.fill(0);
+    renderCanvas();
+  } else {
+    textCard.style.display = 'block';
+    textPreviewWrap.classList.add('visible');
+  }
+  updateTextPreview();
+}
+
+// ── Text input ───────────────────────────────────────────────────────────────
+const textInput = document.getElementById('text-input');
+textInput.addEventListener('input', () => {
+  document.getElementById('char-count').textContent = textInput.value.length;
+  updateTextPreview();
+});
+
+function updateTextPreview() {
+  document.getElementById('text-preview').textContent = textInput.value || '_';
+}
+
+// ── Encode pixels → base64 ───────────────────────────────────────────────────
+function encodePixels() {
+  const bytes = new Uint8Array(W * H / 8);
+  for (let i = 0; i < W * H; i++) {
+    if (pixels[i]) bytes[Math.floor(i / 8)] |= (1 << (7 - (i % 8)));
+  }
+  let bin = '';
+  bytes.forEach(b => bin += String.fromCharCode(b));
+  return btoa(bin);
+}
+
+// ── Push to Firebase ─────────────────────────────────────────────────────────
+document.getElementById('push-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('push-btn');
+  btn.disabled = true;
+  btn.textContent = '⟳ PUSHING...';
+  btn.classList.remove('error-state');
+
+  const payload = buildPayload();
+  const url = `${FB_URL}/${FB_PATH}.json${FB_SECRET ? '?auth=' + FB_SECRET : ''}`;
+
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    btn.classList.add('pushing');
+    btn.textContent = '✓ PUSHED';
+    log(`Pushed — mode:${payload.mode} bytes:${payload.canvas ? payload.canvas.length : 0}`, 'ok');
+    setTimeout(() => {
+      btn.textContent = '⬆ PUSH TO OLED';
+      btn.classList.remove('pushing');
+      btn.disabled = false;
+    }, 1500);
+  } catch (err) {
+    btn.classList.add('error-state');
+    btn.textContent = '✕ FAILED';
+    log(`Error: ${err.message}`, 'err');
+    setStatus('error', 'ERROR');
+    setTimeout(() => {
+      btn.textContent = '⬆ PUSH TO OLED';
+      btn.classList.remove('error-state');
+      btn.disabled = false;
+    }, 2000);
+  }
+});
+
+function buildPayload() {
+  const ts = Date.now();
+  if (mode === 'draw') {
+    return { mode: 'draw', canvas: encodePixels(), text: '', updated_at: ts };
+  } else if (mode === 'text') {
+    return { mode: 'text', canvas: '', text: textInput.value, updated_at: ts };
+  } else {
+    return { mode: 'both', canvas: encodePixels(), text: textInput.value, updated_at: ts };
+  }
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+function log(msg, type = 'info') {
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = type;
+  const t = new Date().toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  line.textContent = `[${t}] ${msg}`;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+function setStatus(state, label) {
+  document.getElementById('status-dot').className = 'status-dot ' + state;
+  document.getElementById('status-label').textContent = label;
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+setStatus('live', 'CONNECTED');
+log(`Firebase → ${FB_URL}/${FB_PATH}`, 'ok');
+renderCanvas();
+</script>
+</body>
+</html>
