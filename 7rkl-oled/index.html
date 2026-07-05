@@ -423,7 +423,7 @@
       <button class="mode-tab" data-mode="song">SONG</button>
     </div>
 
-    <div class="canvas-wrap">
+    <div class="canvas-wrap" id="canvas-wrap">
       <div class="canvas-label">CANVAS — 128 × 64 px</div>
 
       <canvas id="pixel-canvas" width="128" height="64"></canvas>
@@ -435,7 +435,7 @@
         </div>
       </div>
 
-      <div class="canvas-toolbar">
+      <div class="canvas-toolbar" id="canvas-toolbar">
         <button class="tool-btn active" id="tool-pen">✏ DRAW</button>
         <button class="tool-btn" id="tool-erase">◻ ERASE</button>
         <button class="tool-btn danger" id="tool-clear">✕ CLEAR</button>
@@ -451,7 +451,7 @@
   <!-- Right panel -->
   <div class="right-panel">
 
-    <div class="panel-card">
+    <div class="panel-card" id="oled-preview-card">
       <h3>OLED PREVIEW</h3>
       <div class="oled-preview-wrap">
         <span class="oled-preview-label">128×64</span>
@@ -608,8 +608,22 @@ function applyMode() {
   const textPreviewWrap = document.getElementById('text-preview-wrap');
   const miniPreview = document.getElementById('mini-preview');
   const songPreview = document.getElementById('song-preview');
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const canvasToolbar = document.getElementById('canvas-toolbar');
+  const oledPreviewCard = document.getElementById('oled-preview-card');
 
-  canvas.style.display = (mode === 'text' || mode === 'song') ? 'none' : 'block';
+  // canvas-wrap: hidden entirely in song mode; visible otherwise
+  canvasWrap.style.display = (mode === 'song') ? 'none' : 'block';
+
+  // canvas element: hidden in text mode (no drawing needed)
+  canvas.style.display = (mode === 'text') ? 'none' : 'block';
+
+  // toolbar: hidden in text and song modes
+  canvasToolbar.style.display = (mode === 'text' || mode === 'song') ? 'none' : 'flex';
+
+  // OLED preview card: hidden in text mode
+  oledPreviewCard.style.display = (mode === 'text') ? 'none' : 'block';
+
   textCard.style.display = (mode === 'text' || mode === 'both') ? 'block' : 'none';
   lyricsCard.style.display = (mode === 'song') ? 'block' : 'none';
   textPreviewWrap.classList.toggle('visible', mode === 'text' || mode === 'both');
