@@ -37,7 +37,6 @@
     padding: 32px 16px 64px;
   }
 
-  /* ── Header ── */
   header {
     width: 100%;
     max-width: 900px;
@@ -73,7 +72,6 @@
   }
   .status-dot.error { background: var(--danger); }
 
-  /* ── Main layout ── */
   .main {
     width: 100%;
     max-width: 900px;
@@ -83,7 +81,6 @@
     align-items: start;
   }
 
-  /* ── Mode tabs ── */
   .mode-tabs {
     display: flex;
     gap: 0;
@@ -111,7 +108,6 @@
     color: #000;
   }
 
-  /* ── Canvas area ── */
   .canvas-wrap {
     background: var(--surface);
     border: 1px solid var(--border-hi);
@@ -155,13 +151,25 @@
     margin-bottom: 6px;
     letter-spacing: 0.5px;
   }
+  .marquee-mask {
+    overflow: hidden;
+    white-space: nowrap;
+    min-height: 20px;
+  }
   #text-preview {
+    display: inline-block;
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
     color: var(--oled-px);
-    word-break: break-all;
-    min-height: 20px;
     text-shadow: 0 0 6px var(--oled-px);
+    will-change: transform;
+  }
+  #text-preview.scrolling {
+    animation: marquee-anim linear infinite;
+  }
+  @keyframes marquee-anim {
+    from { transform: translateX(100%); }
+    to   { transform: translateX(-100%); }
   }
 
   .canvas-toolbar {
@@ -202,7 +210,6 @@
     accent-color: var(--accent);
   }
 
-  /* ── Right panel ── */
   .right-panel {
     display: flex;
     flex-direction: column;
@@ -248,6 +255,57 @@
     margin-top: 6px;
     text-align: right;
   }
+  .hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 8px;
+    line-height: 1.5;
+  }
+
+  /* ── Lyrics editor ── */
+  .lyric-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .lyric-text {
+    flex: 1;
+    min-width: 0;
+    background: #0a0a14;
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    padding: 6px 8px;
+    color: var(--oled-px);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .lyric-dur {
+    width: 52px;
+    background: #0a0a14;
+    border: 1px solid var(--border-hi);
+    border-radius: 6px;
+    padding: 6px 4px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+  }
+  .lyric-unit { font-size: 10px; color: var(--text-dim); }
+  .lyric-row button {
+    background: transparent;
+    border: 1px solid var(--border-hi);
+    border-radius: 4px;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 5px 7px;
+    font-size: 11px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .lyric-row button:hover { border-color: var(--accent); color: var(--accent); }
+  #lyric-add { width: 100%; margin-top: 2px; }
 
   .oled-preview-wrap {
     background: #000;
@@ -266,14 +324,44 @@
     background: var(--surface);
     padding: 0 4px;
     letter-spacing: 0.5px;
+    z-index: 2;
   }
-  #mini-preview {
-    display: block;
+  .oled-inner {
+    position: relative;
     width: 100%;
     aspect-ratio: 2 / 1;
-    background: #000;
     border-radius: 4px;
+    overflow: hidden;
+  }
+  #mini-preview {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: #000;
     image-rendering: pixelated;
+  }
+  #song-preview {
+    position: absolute;
+    inset: 0;
+    display: none;
+    overflow: hidden;
+    background: #000;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--oled-px);
+    text-shadow: 0 0 6px var(--oled-px);
+  }
+  .lyric-line {
+    position: absolute;
+    left: 4px; right: 4px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: top 0.38s linear, opacity 0.38s linear;
   }
 
   #push-btn {
@@ -319,7 +407,7 @@
 
 <header>
   <h1>// OLED CTRL</h1>
-  <span>ESP-01 · 128×64 · Firebase</span>
+  <span>ESP-01 · 128×64 · Firebase (streamed)</span>
   <span id="status-label" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim)">CONNECTING...</span>
   <div class="status-dot" id="status-dot"></div>
 </header>
@@ -332,6 +420,7 @@
       <button class="mode-tab active" data-mode="draw">DRAW</button>
       <button class="mode-tab" data-mode="text">TEXT</button>
       <button class="mode-tab" data-mode="both">DRAW + TEXT</button>
+      <button class="mode-tab" data-mode="song">SONG</button>
     </div>
 
     <div class="canvas-wrap">
@@ -340,8 +429,10 @@
       <canvas id="pixel-canvas" width="128" height="64"></canvas>
 
       <div id="text-preview-wrap">
-        <div class="preview-label">TEXT OVERLAY (bottom 16px)</div>
-        <div id="text-preview">_</div>
+        <div class="preview-label">TEXT PREVIEW (scrolls if too long, just like the OLED will)</div>
+        <div class="marquee-mask">
+          <div id="text-preview">_</div>
+        </div>
       </div>
 
       <div class="canvas-toolbar">
@@ -364,14 +455,25 @@
       <h3>OLED PREVIEW</h3>
       <div class="oled-preview-wrap">
         <span class="oled-preview-label">128×64</span>
-        <canvas id="mini-preview" width="128" height="64"></canvas>
+        <div class="oled-inner">
+          <canvas id="mini-preview" width="128" height="64"></canvas>
+          <div id="song-preview"></div>
+        </div>
       </div>
     </div>
 
     <div class="panel-card" id="text-card" style="display:none">
       <h3>TEXT</h3>
-      <textarea id="text-input" placeholder="Type something..." maxlength="21"></textarea>
-      <div class="char-count"><span id="char-count">0</span> / 21</div>
+      <textarea id="text-input" placeholder="Type something..." maxlength="120"></textarea>
+      <div class="char-count"><span id="char-count">0</span> / 120</div>
+      <div class="hint">Fits on screen → shown centered.<br>Too long → scrolls horizontally on the OLED.</div>
+    </div>
+
+    <div class="panel-card" id="lyrics-card" style="display:none">
+      <h3>LYRICS (SONG MODE)</h3>
+      <div id="lyrics-list"></div>
+      <button class="tool-btn" id="lyric-add">+ ADD LINE</button>
+      <div class="hint">Each line holds for its duration, then scrolls up as the next line scrolls in — like a karaoke display.</div>
     </div>
 
     <div class="panel-card">
@@ -390,8 +492,8 @@
 <script>
 // ── Firebase config (hardcoded) ──────────────────────────────────────────────
 const FB_URL    = 'https://home-cce99-default-rtdb.firebaseio.com'; // ← edit
-const FB_PATH   = '7rkl/oled.json';                                              // ← edit
-const FB_SECRET = 'BaMmC6ZUFOpew6gCCWnu9pZ70UBSwXg7BPrJzLnn';                                                  // ← edit (optional)
+const FB_PATH   = '7rkl/oled.json';                                 // ← edit
+const FB_SECRET = 'BaMmC6ZUFOpew6gCCWnu9pZ70UBSwXg7BPrJzLnn';        // ← edit (optional)
 
 // ── State ────────────────────────────────────────────────────────────────────
 const W = 128, H = 64;
@@ -400,6 +502,10 @@ let mode = 'draw';
 let tool = 'pen';
 let brushSize = 2;
 let isDrawing = false;
+
+let lyricRows = [ { text: '', duration: 3 } ];
+let songPreviewTimer = null;
+let marqueeRefreshTimer = null;
 
 // ── Canvas setup ─────────────────────────────────────────────────────────────
 const canvas = document.getElementById('pixel-canvas');
@@ -456,12 +562,12 @@ function paint(x, y) {
   renderCanvas();
 }
 
-canvas.addEventListener('mousedown', e => { isDrawing = true; paint(...Object.values(getPixelPos(e))); });
-canvas.addEventListener('mousemove', e => { if (isDrawing) paint(...Object.values(getPixelPos(e))); });
+canvas.addEventListener('mousedown', e => { isDrawing = true; const p = getPixelPos(e); paint(p.x, p.y); });
+canvas.addEventListener('mousemove', e => { if (isDrawing) { const p = getPixelPos(e); paint(p.x, p.y); } });
 canvas.addEventListener('mouseup', () => isDrawing = false);
 canvas.addEventListener('mouseleave', () => isDrawing = false);
-canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; paint(...Object.values(getPixelPos(e))); }, {passive:false});
-canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing) paint(...Object.values(getPixelPos(e))); }, {passive:false});
+canvas.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; const p = getPixelPos(e); paint(p.x, p.y); }, {passive:false});
+canvas.addEventListener('touchmove', e => { e.preventDefault(); if (isDrawing) { const p = getPixelPos(e); paint(p.x, p.y); } }, {passive:false});
 canvas.addEventListener('touchend', () => isDrawing = false);
 
 // ── Tools ────────────────────────────────────────────────────────────────────
@@ -498,22 +604,26 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
 
 function applyMode() {
   const textCard = document.getElementById('text-card');
+  const lyricsCard = document.getElementById('lyrics-card');
   const textPreviewWrap = document.getElementById('text-preview-wrap');
+  const miniPreview = document.getElementById('mini-preview');
+  const songPreview = document.getElementById('song-preview');
 
-  canvas.style.display = mode === 'text' ? 'none' : 'block';
+  canvas.style.display = (mode === 'text' || mode === 'song') ? 'none' : 'block';
+  textCard.style.display = (mode === 'text' || mode === 'both') ? 'block' : 'none';
+  lyricsCard.style.display = (mode === 'song') ? 'block' : 'none';
+  textPreviewWrap.classList.toggle('visible', mode === 'text' || mode === 'both');
+  miniPreview.style.display = (mode === 'song') ? 'none' : 'block';
+  songPreview.style.display = (mode === 'song') ? 'block' : 'none';
 
-  if (mode === 'draw') {
-    textCard.style.display = 'none';
-    textPreviewWrap.classList.remove('visible');
-  } else if (mode === 'text') {
-    textCard.style.display = 'block';
-    textPreviewWrap.classList.add('visible');
+  if (mode === 'text') {
     pixels.fill(0);
     renderCanvas();
-  } else {
-    textCard.style.display = 'block';
-    textPreviewWrap.classList.add('visible');
   }
+
+  stopSongPreview();
+  if (mode === 'song') startSongPreview();
+
   updateTextPreview();
 }
 
@@ -525,7 +635,121 @@ textInput.addEventListener('input', () => {
 });
 
 function updateTextPreview() {
-  document.getElementById('text-preview').textContent = textInput.value || '_';
+  const preview = document.getElementById('text-preview');
+  const mask = preview.parentElement;
+  const val = textInput.value || '_';
+  preview.textContent = val;
+  preview.classList.remove('scrolling');
+  preview.style.animation = 'none';
+  preview.style.transform = 'none';
+
+  // measure after layout settles
+  requestAnimationFrame(() => {
+    const overflow = preview.scrollWidth > mask.clientWidth;
+    if (overflow && textInput.value.length > 0) {
+      const duration = Math.max(3, val.length * 0.15);
+      preview.style.animation = `marquee-anim ${duration}s linear infinite`;
+      preview.classList.add('scrolling');
+    }
+  });
+}
+
+// ── Lyrics editor ────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderLyricRows() {
+  const container = document.getElementById('lyrics-list');
+  container.innerHTML = '';
+  lyricRows.forEach((row, i) => {
+    const el = document.createElement('div');
+    el.className = 'lyric-row';
+    el.innerHTML = `
+      <input type="text" class="lyric-text" maxlength="60" placeholder="Lyric line ${i+1}" value="${escapeHtml(row.text)}">
+      <input type="number" class="lyric-dur" min="0.3" step="0.1" value="${row.duration}">
+      <span class="lyric-unit">s</span>
+      <button class="lyric-up" title="Move up">↑</button>
+      <button class="lyric-down" title="Move down">↓</button>
+      <button class="lyric-remove" title="Remove">✕</button>
+    `;
+    el.querySelector('.lyric-text').addEventListener('input', e => { row.text = e.target.value; refreshSongPreviewDebounced(); });
+    el.querySelector('.lyric-dur').addEventListener('input', e => { row.duration = parseFloat(e.target.value) || 1; refreshSongPreviewDebounced(); });
+    el.querySelector('.lyric-up').addEventListener('click', () => {
+      if (i > 0) { [lyricRows[i-1], lyricRows[i]] = [lyricRows[i], lyricRows[i-1]]; renderLyricRows(); refreshSongPreviewDebounced(); }
+    });
+    el.querySelector('.lyric-down').addEventListener('click', () => {
+      if (i < lyricRows.length - 1) { [lyricRows[i+1], lyricRows[i]] = [lyricRows[i], lyricRows[i+1]]; renderLyricRows(); refreshSongPreviewDebounced(); }
+    });
+    el.querySelector('.lyric-remove').addEventListener('click', () => {
+      lyricRows.splice(i, 1);
+      if (lyricRows.length === 0) lyricRows.push({ text: '', duration: 3 });
+      renderLyricRows();
+      refreshSongPreviewDebounced();
+    });
+    container.appendChild(el);
+  });
+}
+
+document.getElementById('lyric-add').addEventListener('click', () => {
+  lyricRows.push({ text: '', duration: 3 });
+  renderLyricRows();
+});
+
+function refreshSongPreviewDebounced() {
+  clearTimeout(marqueeRefreshTimer);
+  marqueeRefreshTimer = setTimeout(() => { if (mode === 'song') startSongPreview(); }, 300);
+}
+
+// Simulated karaoke preview — mirrors the ESP's hold → scroll-up transition
+function startSongPreview() {
+  stopSongPreview();
+  const box = document.getElementById('song-preview');
+  box.innerHTML = '';
+  const rows = lyricRows.filter(r => true); // keep indices stable even if text empty
+  if (rows.length === 0) return;
+
+  const TRANSITION_MS = 380;
+
+  function showLyric(i) {
+    box.innerHTML = '';
+    const cur = document.createElement('div');
+    cur.className = 'lyric-line';
+    cur.textContent = rows[i].text || '(empty line)';
+    cur.style.top = '42%';
+    cur.style.opacity = '1';
+    box.appendChild(cur);
+
+    const holdMs = Math.max(rows[i].duration * 1000, 600);
+    songPreviewTimer = setTimeout(() => {
+      cur.style.top = '-60%';
+      cur.style.opacity = '0';
+
+      const nextIdx = (i + 1) % rows.length;
+      const nxt = document.createElement('div');
+      nxt.className = 'lyric-line';
+      nxt.textContent = rows[nextIdx].text || '(empty line)';
+      nxt.style.top = '140%';
+      nxt.style.opacity = '0';
+      box.appendChild(nxt);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          nxt.style.top = '42%';
+          nxt.style.opacity = '1';
+        });
+      });
+
+      songPreviewTimer = setTimeout(() => showLyric(nextIdx), TRANSITION_MS);
+    }, Math.max(holdMs - TRANSITION_MS, 200));
+  }
+
+  showLyric(0);
+}
+
+function stopSongPreview() {
+  if (songPreviewTimer) clearTimeout(songPreviewTimer);
+  songPreviewTimer = null;
 }
 
 // ── Encode pixels → base64 ───────────────────────────────────────────────────
@@ -559,7 +783,10 @@ document.getElementById('push-btn').addEventListener('click', async () => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     btn.classList.add('pushing');
     btn.textContent = '✓ PUSHED';
-    log(`Pushed — mode:${payload.mode} bytes:${payload.canvas ? payload.canvas.length : 0}`, 'ok');
+    const detail = payload.mode === 'song'
+      ? `lines:${payload.lyrics.length}`
+      : `bytes:${payload.canvas ? payload.canvas.length : 0}`;
+    log(`Pushed — mode:${payload.mode} ${detail}`, 'ok');
     setTimeout(() => {
       btn.textContent = '⬆ PUSH TO OLED';
       btn.classList.remove('pushing');
@@ -581,11 +808,16 @@ document.getElementById('push-btn').addEventListener('click', async () => {
 function buildPayload() {
   const ts = Date.now();
   if (mode === 'draw') {
-    return { mode: 'draw', canvas: encodePixels(), text: '', updated_at: ts };
+    return { mode: 'draw', canvas: encodePixels(), text: '', lyrics: [], updated_at: ts };
   } else if (mode === 'text') {
-    return { mode: 'text', canvas: '', text: textInput.value, updated_at: ts };
-  } else {
-    return { mode: 'both', canvas: encodePixels(), text: textInput.value, updated_at: ts };
+    return { mode: 'text', canvas: '', text: textInput.value, lyrics: [], updated_at: ts };
+  } else if (mode === 'both') {
+    return { mode: 'both', canvas: encodePixels(), text: textInput.value, lyrics: [], updated_at: ts };
+  } else { // song
+    const lyrics = lyricRows
+      .filter(r => r.text.trim().length > 0)
+      .map(r => ({ text: r.text.trim(), duration: Math.round(Math.max(r.duration, 0.3) * 1000) }));
+    return { mode: 'song', canvas: '', text: '', lyrics, updated_at: ts };
   }
 }
 
@@ -609,6 +841,8 @@ function setStatus(state, label) {
 setStatus('live', 'CONNECTED');
 log(`Firebase → ${FB_URL}/${FB_PATH.replace(/\.json$/, '')}.json`, 'ok');
 renderCanvas();
+renderLyricRows();
+applyMode();
 </script>
 </body>
 </html>
