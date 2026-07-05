@@ -613,22 +613,22 @@ function applyMode() {
   const oledPreviewCard = document.getElementById('oled-preview-card');
 
   // canvas-wrap: hidden entirely in song mode; visible otherwise
-  canvasWrap.style.display = (mode === 'lyrics') ? 'none' : 'block';
+  canvasWrap.style.display = (mode === 'song') ? 'none' : 'block';
 
   // canvas element: hidden in text mode (no drawing needed)
   canvas.style.display = (mode === 'text') ? 'none' : 'block';
 
   // toolbar: hidden in text and song modes
-  canvasToolbar.style.display = (mode === 'text' || mode === 'lyrics') ? 'none' : 'flex';
+  canvasToolbar.style.display = (mode === 'text' || mode === 'song') ? 'none' : 'flex';
 
   // OLED preview card: hidden in text mode
   oledPreviewCard.style.display = (mode === 'text') ? 'none' : 'block';
 
   textCard.style.display = (mode === 'text' || mode === 'both') ? 'block' : 'none';
-  lyricsCard.style.display = (mode === 'lyrics') ? 'block' : 'none';
+  lyricsCard.style.display = (mode === 'song') ? 'block' : 'none';
   textPreviewWrap.classList.toggle('visible', mode === 'text' || mode === 'both');
-  miniPreview.style.display = (mode === 'lyrics') ? 'none' : 'block';
-  songPreview.style.display = (mode === 'lyrics') ? 'block' : 'none';
+  miniPreview.style.display = (mode === 'song') ? 'none' : 'block';
+  songPreview.style.display = (mode === 'song') ? 'block' : 'none';
 
   if (mode === 'text') {
     pixels.fill(0);
@@ -636,7 +636,7 @@ function applyMode() {
   }
 
   stopSongPreview();
-  if (mode === 'lyrics') startSongPreview();
+  if (mode === 'song') startSongPreview();
 
   updateTextPreview();
 }
@@ -712,7 +712,7 @@ document.getElementById('lyric-add').addEventListener('click', () => {
 
 function refreshSongPreviewDebounced() {
   clearTimeout(marqueeRefreshTimer);
-  marqueeRefreshTimer = setTimeout(() => { if (mode === 'lyrics') startSongPreview(); }, 300);
+  marqueeRefreshTimer = setTimeout(() => { if (mode === 'song') startSongPreview(); }, 300);
 }
 
 // Simulated karaoke preview — mirrors the ESP's hold → scroll-up transition
@@ -797,7 +797,7 @@ document.getElementById('push-btn').addEventListener('click', async () => {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     btn.classList.add('pushing');
     btn.textContent = '✓ PUSHED';
-    const detail = payload.mode === 'lyrics'
+    const detail = payload.mode === 'song'
       ? `lines:${payload.lyrics.length}`
       : `bytes:${payload.canvas ? payload.canvas.length : 0}`;
     log(`Pushed — mode:${payload.mode} ${detail}`, 'ok');
@@ -831,7 +831,7 @@ function buildPayload() {
     const lyrics = lyricRows
       .filter(r => r.text.trim().length > 0)
       .map(r => ({ text: r.text.replace(/\s+/g, ' ').trim(), duration: Math.round(Math.max(r.duration, 0.3) * 1000) }));
-    return { mode: 'lyrics', canvas: '', text: '', lyrics, updated_at: ts };
+    return { mode: 'song', canvas: '', text: '', lyrics, updated_at: ts };
   }
 }
 
