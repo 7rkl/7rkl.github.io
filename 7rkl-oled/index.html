@@ -802,7 +802,7 @@ document.getElementById('push-btn').addEventListener('click', async () => {
       : `bytes:${payload.canvas ? payload.canvas.length : 0}`;
     log(`Pushed — mode:${payload.mode} ${detail}`, 'ok');
     setTimeout(() => {
-      btn.textContent = '⬆ PUSH TO OLED';
+      btn.textContent = 'PUSH TO OLED';
       btn.classList.remove('pushing');
       btn.disabled = false;
     }, 1500);
@@ -812,7 +812,7 @@ document.getElementById('push-btn').addEventListener('click', async () => {
     log(`Error: ${err.message}`, 'err');
     setStatus('error', 'ERROR');
     setTimeout(() => {
-      btn.textContent = '⬆ PUSH TO OLED';
+      btn.textContent = 'PUSH TO OLED';
       btn.classList.remove('error-state');
       btn.disabled = false;
     }, 2000);
